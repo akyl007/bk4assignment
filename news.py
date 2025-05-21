@@ -12,12 +12,12 @@ class CryptoNews:
         self.coingecko_url = os.getenv("COINGECKO_API_URL", "https://api.coingecko.com/api/v3")
         self.cryptopanic_url = "https://cryptopanic.com/api/v1/posts"
         self.cryptopanic_api_key = os.getenv("CRYPTOPANIC_API_KEY")
-        self.max_retries = 1  # reduce to 1 attempt for speed
-        self.retry_delay = 0.5  # reduce delay
+        self.max_retries = 3
+        self.retry_delay = 2  # увеличиваем задержку между попытками
         self.cache = {}
         self.cache_timeout = 300  # 5 minutes
         self.last_request_time = 0
-        self.min_request_interval = 0.2  # reduce request interval
+        self.min_request_interval = 1.2  # увеличиваем интервал между запросами до 1.2 секунд
         
         # Name to ID mapping for CoinGecko
         self.coin_mapping = {
@@ -58,14 +58,38 @@ class CryptoNews:
         """
         Makes HTTP request with error handling and retries
         """
-        try:
-            self._handle_rate_limit()
-            response = requests.get(url, params=params, timeout=3)  # reduce timeout to 3 seconds
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Request error: {str(e)}")
-            return None
+        for attempt in range(self.max_retries):
+            try:
+                self._handle_rate_limit()
+                response = requests.get(url, params=params, timeout=5)  # увеличиваем таймаут
+                
+                # Проверяем заголовки лимитов
+                if 'X-RateLimit-Remaining' in response.headers:
+                    remaining = int(response.headers['X-RateLimit-Remaining'])
+                    if remaining <= 1:
+                        # Если остался 1 запрос или меньше, ждем дольше
+                        time.sleep(self.min_request_interval * 2)
+                
+                response.raise_for_status()
+                return response.json()
+                
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Too Many Requests
+                    if attempt < self.max_retries - 1:
+                        # Увеличиваем задержку при ошибке 429
+                        time.sleep(self.retry_delay * (attempt + 1))
+                        continue
+                print(f"HTTP error: {str(e)}")
+                return None
+                
+            except requests.exceptions.RequestException as e:
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
+                    continue
+                print(f"Request error: {str(e)}")
+                return None
+                
+        return None
 
     def get_news(self, crypto_name: str) -> List[Dict]:
         """
@@ -146,9 +170,10 @@ class CryptoNews:
         params = {
             'localization': 'false',
             'tickers': 'false',
-            'market_data': 'false',
+            'market_data': 'true',
             'community_data': 'true',
-            'developer_data': 'false'
+            'developer_data': 'false',
+            'sparkline': 'false'
         }
 
         response = self._make_request(url, params)
@@ -156,13 +181,64 @@ class CryptoNews:
             return []
 
         news_items = []
-        if 'community_data' in response:
-            for item in response['community_data'].get('reddit_posts', [])[:5]:
+        
+        # Get description
+        if 'description' in response and 'en' in response['description']:
+            description = response['description']['en']
+            if description:
+                # Split description into paragraphs and take first two
+                paragraphs = description.split('\r\n\r\n')
+                summary = ' '.join(paragraphs[:2])
                 news_items.append({
-                    'title': item.get('title', ''),
-                    'url': item.get('url', ''),
-                    'source': 'Reddit',
-                    'published_at': item.get('published_at', '')
+                    'title': f"About {response.get('name', crypto_name)}",
+                    'url': f"https://www.coingecko.com/en/coins/{coin_id}",
+                    'source': 'CoinGecko',
+                    'published_at': datetime.now().isoformat(),
+                    'description': summary[:500] + '...' if len(summary) > 500 else summary
                 })
+
+        # Get categories as news
+        if 'categories' in response:
+            categories = response.get('categories', [])
+            if categories:
+                news_items.append({
+                    'title': f"Categories: {', '.join(categories)}",
+                    'url': f"https://www.coingecko.com/en/coins/{coin_id}",
+                    'source': 'CoinGecko',
+                    'published_at': datetime.now().isoformat()
+                })
+
+        # Get public notice
+        if 'public_notice' in response and response['public_notice']:
+            news_items.append({
+                'title': f"Public Notice: {response['public_notice']}",
+                'url': f"https://www.coingecko.com/en/coins/{coin_id}",
+                'source': 'CoinGecko',
+                'published_at': datetime.now().isoformat()
+            })
+
+        # Get additional notices
+        if 'additional_notices' in response:
+            for notice in response['additional_notices']:
+                if notice:
+                    news_items.append({
+                        'title': f"Notice: {notice}",
+                        'url': f"https://www.coingecko.com/en/coins/{coin_id}",
+                        'source': 'CoinGecko',
+                        'published_at': datetime.now().isoformat()
+                    })
+
+        # Get market data updates
+        if 'market_data' in response:
+            market_data = response['market_data']
+            if 'price_change_percentage_24h' in market_data:
+                change = market_data['price_change_percentage_24h']
+                if change is not None:
+                    news_items.append({
+                        'title': f"24h Price Change: {change:+.2f}%",
+                        'url': f"https://www.coingecko.com/en/coins/{coin_id}",
+                        'source': 'Market Data',
+                        'published_at': datetime.now().isoformat()
+                    })
 
         return news_items 

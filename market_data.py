@@ -10,12 +10,13 @@ load_dotenv()
 class MarketData:
     def __init__(self):
         self.coingecko_url = os.getenv("COINGECKO_API_URL", "https://api.coingecko.com/api/v3")
+        self.coingecko_api_key = os.getenv("COINGECKO_API_KEY")
         self.max_retries = 3
-        self.retry_delay = 1
+        self.retry_delay = 2
         self.cache = {}
         self.cache_timeout = 300  # 5 minutes
         self.last_request_time = 0
-        self.min_request_interval = 0.2  # 200ms between requests
+        self.min_request_interval = 1.2  # увеличиваем интервал между запросами
         
         # Name to ID mapping for CoinGecko
         self.coin_mapping = {
@@ -56,17 +57,47 @@ class MarketData:
         """
         Makes HTTP request with error handling and retries
         """
+        headers = {}
+        if self.coingecko_api_key:
+            headers['X-CG-API-KEY'] = self.coingecko_api_key
+
         for attempt in range(self.max_retries):
             try:
                 self._handle_rate_limit()
-                response = requests.get(url, params=params, timeout=5)
+                response = requests.get(
+                    url, 
+                    params=params, 
+                    headers=headers,
+                    timeout=5
+                )
+                
+                # Проверяем заголовки лимитов
+                if 'X-RateLimit-Remaining' in response.headers:
+                    remaining = int(response.headers['X-RateLimit-Remaining'])
+                    if remaining <= 1:
+                        # Если остался 1 запрос или меньше, ждем дольше
+                        time.sleep(self.min_request_interval * 2)
+                
                 response.raise_for_status()
                 return response.json()
+                
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Too Many Requests
+                    if attempt < self.max_retries - 1:
+                        # Увеличиваем задержку при ошибке 429
+                        time.sleep(self.retry_delay * (attempt + 1))
+                        continue
+                print(f"HTTP error: {str(e)}")
+                return None
+                
             except requests.exceptions.RequestException as e:
-                if attempt == self.max_retries - 1:
-                    print(f"Request error after {self.max_retries} attempts: {str(e)}")
-                    return None
-                time.sleep(self.retry_delay)
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
+                    continue
+                print(f"Request error: {str(e)}")
+                return None
+                
+        return None
 
     def get_market_data(self, crypto_name: str) -> Optional[Dict]:
         """
@@ -88,12 +119,13 @@ class MarketData:
                 'tickers': 'false',
                 'market_data': 'true',
                 'community_data': 'false',
-                'developer_data': 'false'
+                'developer_data': 'false',
+                'sparkline': 'false'
             }
 
             response = self._make_request(url, params)
             if not response:
-                return None
+                return self._get_default_market_data()
 
             market_data = {
                 'price': response.get('market_data', {}).get('current_price', {}).get('usd', 0),
@@ -111,11 +143,11 @@ class MarketData:
 
         except Exception as e:
             print(f"Error getting market data: {str(e)}")
-            return None
+            return self._get_default_market_data()
 
     def _get_default_market_data(self) -> Dict:
         """
-        Возвращает данные по умолчанию в случае ошибки
+        Returns default market data in case of errors
         """
         return {
             'price': 0,

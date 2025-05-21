@@ -91,13 +91,21 @@ The response should be structured and include current price and news information
 Use markdown for formatting.
 
 Response format:
-1. Brief overview of the cryptocurrency
+1. Brief overview of the cryptocurrency (2-3 sentences)
 2. Current market status (price, market cap, 24h change)
 3. Market position (rank)
-4. Latest news summary
-5. Conclusion or outlook
+4. Latest news summary (focus on most important 2-3 news items)
+5. Conclusion or outlook (1-2 sentences)
 
-Keep the response concise and focused on the most important information."""
+Important:
+- Keep the response concise and focused
+- Avoid repeating the same information
+- Use bullet points for better readability
+- Include timestamps for market data
+- Do not include footnotes or references
+- Do not repeat price changes in different sections
+
+Keep the response under 300 words."""
 
             # Try to get response from Ollama
             for attempt in range(self.max_retries):
@@ -107,7 +115,9 @@ Keep the response concise and focused on the most important information."""
                         json={
                             "model": self.model,
                             "prompt": prompt,
-                            "stream": False
+                            "stream": False,
+                            "temperature": 0.7,
+                            "max_tokens": 500
                         },
                         timeout=30
                     )
