@@ -18,7 +18,9 @@ AI is an assistant for analyzing the cryptocurrency market, using live data from
 - Market data analysis
 ![image](https://github.com/user-attachments/assets/fcb4d78c-be85-44aa-b778-7e98dac47a2e)
 
-- Generation of informative responses using GPT
+- Generation of template-informative responses using GPT
+![image](https://github.com/user-attachments/assets/4b247144-f1a9-4ca3-9c57-8b5647132ed6)
+
 
 ## 🚀 Installation
 
