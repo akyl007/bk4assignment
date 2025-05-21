@@ -1,11 +1,20 @@
 # 🤖 AI Crypto Assistant
 
 AI is an assistant for analyzing the cryptocurrency market, using live data from various APIs and GPT to generate responses.
+![image](https://github.com/user-attachments/assets/9d29831a-ce94-4a1c-a3bb-43d148515a8d)
+
+
+
 
 ## 📌 Features
+![image](https://github.com/user-attachments/assets/36aa36a1-76dd-4e6c-84cd-100321203664)
 
 - Getting up-to-date news about cryptocurrencies
+![image](https://github.com/user-attachments/assets/b6ffd44f-e85c-4ff1-8782-b7fe3b19bd18)
+
 - Real-time price monitoring
+![image](https://github.com/user-attachments/assets/a00cdf24-c666-4d5a-a50c-5664fe066137)
+
 - Market data analysis
 - Generation of informative responses using GPT
 
