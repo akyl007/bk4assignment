@@ -1,48 +1,48 @@
 # 🤖 AI Crypto Assistant
 
-AI-ассистент для анализа криптовалютного рынка, использующий live-данные с различных API и GPT для генерации ответов.
+AI is an assistant for analyzing the cryptocurrency market, using live data from various APIs and GPT to generate responses.
 
-## 📌 Возможности
+## 📌 Features
 
-- Получение актуальных новостей о криптовалютах
-- Мониторинг цен в реальном времени
-- Анализ рыночных данных
-- Генерация информативных ответов с помощью GPT
+- Getting up-to-date news about cryptocurrencies
+- Real-time price monitoring
+- Market data analysis
+- Generation of informative responses using GPT
 
-## 🚀 Установка
+## 🚀 Installation
 
-1. Клонируйте репозиторий:
+1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/ai-crypto-assistant.git
 cd ai-crypto-assistant
 ```
 
-2. Установите зависимости:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Создайте файл `.env` и добавьте необходимые API ключи:
+3. Create file `.env` and add API keys:
 ```env
 OPENAI_API_KEY=your_openai_api_key
 CRYPTOPANIC_API_KEY=your_cryptopanic_api_key
 COINGECKO_API_URL=https://api.coingecko.com/api/v3
 ```
 
-## ▶️ Использование
+## ▶️ Using
 
-Запустите приложение:
+Launch the app:
 ```bash
 streamlit run main.py
 ```
 
-## 📝 Примеры запросов
+## 📝 Query examples
 
-- "Расскажи новости про Ethereum"
-- "Как дела у Bitcoin?"
-- "Что происходит с Solana?"
+- "Tell us the news about Ethereum"
+- "How is Bitcoin doing?"
+- "What's going on with Solana?"
 
-## 🛠 Технологии
+## 🛠 Technologies:
 
 - Python 3.10+
 - Streamlit
@@ -51,6 +51,6 @@ streamlit run main.py
 - Binance API
 - CoinGecko API
 
-## 📄 Лицензия
+## 📄 Licenze
 
 MIT 
